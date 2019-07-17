@@ -8,9 +8,9 @@ import './display.css'
 function Display(props) {
   return (
     <div className="display">
-        {props.grid.map(row => 
-        <div className="row"> 
-            {row.map(col => <Cell cell={col} /> )}
+        {props.grid.map((row, rowIndex) => 
+        <div className={"row " + rowIndex}> 
+            {row.map((col, colIndex) => <Cell cell={col} location={[rowIndex, colIndex]} clickCell={props.clickCell}/> )}
         </div> 
         )}
     </div>

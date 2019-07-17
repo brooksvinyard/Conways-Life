@@ -2,6 +2,7 @@ import React from 'react';
 
 import Controls from '../controls/controls'
 import Display from '../display/display'
+var gameInterval
 
 class Game extends React.Component {
     constructor(props){
@@ -10,32 +11,67 @@ class Game extends React.Component {
             generation: 0,
             // grid: [[1,0,1,1],[0,0,1,1],[1,0,0,1],[0,0,0,0]],
             // grid: [[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1]],
-            grid: [[1,1,0,0],[0,1,1,0],[0,1,1,0],[0,0,0,0]],
-            gridLine: [],
-            gridSize: 4,
+            // grid: [[1,1,0,0,0,0],[0,1,1,0,1,1],[0,1,1,0,1,0],[0,0,0,0,1,1],[0,0,0,0,1,1],[0,0,1,0,0,0]],
+            // grid: [[0,0,0,0,0,0],[0,0,1,1,0,0],[0,0,1,1,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]],
+            grid: null,
+            gridSize: 50,
+            start: false,
+            initialGrid: [],
+
         }
     }
+    componentDidMount = () => {
+        var randomGrid = this.generateGrid(this.state.gridSize)
+        this.setState({ grid: randomGrid });
+        this.setState({ initialGrid: randomGrid });
+    }
 
-    startGame = () => {
-        // console.log("this.state.generation", this.state.generation);
-        // this.state.grid.forEach(e => {
-        //     console.log("e", e);
-        // });
-        this.gridToLineFn(this.state.grid)
-        // this.lineToGridFn(this.state.gridSize, this.state.gridLine)
+    componentDidUpdate = () => {
+    }
 
+    generateGrid(size) {
+        var newGrid =  new Array(size*size).fill(0).map(function(n) {
+            return Math.round(Math.random());
+        });
+        return this.lineToGridFn(size, newGrid)
+    }
+
+    clickCell = (location) => {
+        var newGrid = this.state.grid
+        if (newGrid[location[0]][location[1]] === 0){
+            newGrid[location[0]][location[1]] = 1
+        } else {
+            newGrid[location[0]][location[1]] = 0
+        }
+        console.log(location, newGrid[location[0]][location[1]])
+        this.setState({ grid: newGrid });
+    }
+
+    startGame = e => {
+        // e.preventDefault();
+        this.setState({ start: true });
+        // this.setState({ initialGrid: this.state.grid });
+        gameInterval = setInterval(this.gameTick, 100);
+        // setInterval(this.gameTick(), 1000);
+        // this.gameTick()
+        // maybe set timeout?
+    }
+    gameTick = () => {
+        // console.log("*tick*")
+        // gameInterval = setInterval(this.startGame(), 1000);
         this.game(this.state.gridSize, this.state.grid)
-
-        let newGeneration = this.state.generation + 1;
-        this.setState({ generation: newGeneration });
+        this.setState({ generation: this.state.generation + 1 });
     }
 
     stopGame = () => {
-        
+        this.setState({ start: false });
+        clearInterval(gameInterval);
     }
 
     resetGame = () => {
+        this.setState({ start: false });
         this.setState({ generation: 0 });
+        this.setState({ grid: this.state.initialGrid });
     }
 
     gridToLineFn = (grid) => {
@@ -45,9 +81,9 @@ class Game extends React.Component {
                 line.push(grid[i][j])
             }
         }
-        console.log("grid line:", line);
-        this.setState({ gridLine: line });
-        // return line
+        // console.log("grid line:", line);
+        // this.setState({ gridLine: line });
+        return line
     }
 
     lineToGridFn = (gridSize, gridLine) => {
@@ -64,33 +100,19 @@ class Game extends React.Component {
                 innerGrid.push(gridLine[i])
             }
         }
-        console.log("outerGrid:", outerGrid);
-        this.setState({ grid: outerGrid });
-        // return outerGrid
+        // console.log("outerGrid:", outerGrid);
+        // this.setState({ grid: outerGrid });
+        return outerGrid
     }
 
     game = (gridSize, grid) => {
         // If the cell is alive and has 2 or 3 neighbors, then it remains alive. Else it dies.
         // If the cell is dead and has exactly 3 neighbors, then it comes to life. Else if remains dead.
-        // neighbor ==  [-1,-1] [-1, 0] [-1, 1]
-        //              [ 0,-1] [  ,  ] [ 0, 1]
-        //              [ 1,-1] [ 1, 0] [ 1, 1]
-        // gridSize = 4
-        // Grid
-        // [ 0, 1, 2, 3]
-        // [ 4,*5, 6, 7]
-        // [ 8, 9,10,11]
-        // [12,13,14,15]
-        // 
-        // neighbor =   0, 1, 2
-        //              4,  , 6
-        //              8, 9,10
-        // neighbor =   -gridSize -1, -gridSize, -gridSize +1
-        //                        -1,                     ,+1
-        //              +gridSize -1, +gridSize, +gridSize +1 
+        var gridLine = this.gridToLineFn(grid)
+
         var newGridLine = []
-        this.state.gridLine.map((cell, index) => {
-            var neighbors = this.neighbors(index, this.state.gridLine, this.state.gridSize)
+        gridLine.map((cell, index) => {
+            var neighbors = this.neighbors(index, gridLine, gridSize)
             if (cell === 1){ // cell alive
                 if (neighbors === 2 || neighbors === 3){ // cell has 2 or 3 neighbors
                     newGridLine.push(1)
@@ -105,35 +127,46 @@ class Game extends React.Component {
                     newGridLine.push(0)
                 }
             }
+            return newGridLine
         })
 
-        console.log("newGridLine", newGridLine)
-        this.lineToGridFn(gridSize, newGridLine)
+        // console.log("*GAME* newGridLine", newGridLine)
+        var newGrid = this.lineToGridFn(gridSize, newGridLine)
+        this.setState({ grid: newGrid });
     }
 
     neighbors = (index, gridLine, gridSize) => {
+        // neighbor =   -gridSize -1, -gridSize, -gridSize +1
+        //                        -1,                     ,+1
+        //              +gridSize -1, +gridSize, +gridSize +1 
         var neighbors = 0
 
-        if ((index % gridSize) !== 0 && (index - gridSize) >= 0 && gridLine[index - gridSize - 1] === 1)   {neighbors += 1; console.log("1, true", index)}
-        if ((index - gridSize) >= 0 && gridLine[index - gridSize    ] === 1)   {neighbors += 1; console.log("2, true", index)}
-        if (((index+1) % gridSize) !== 0 && (index - gridSize) >= 0 && gridLine[index - gridSize + 1] === 1)   {neighbors += 1; console.log("3, true", index)}
-        if ((index % gridSize) !== 0 && gridLine[index - 1] === 1)              {neighbors += 1; console.log("4, true", index)}
-        if (((index+1) % gridSize) !== 0 && gridLine[index + 1] === 1)              {neighbors += 1; console.log("5, true", index)}
-        if ((index % gridSize) !== 0 && gridLine[index + gridSize - 1] === 1)   {neighbors += 1; console.log("6, true", index)}
-        if (gridLine[index + gridSize    ] === 1)   {neighbors += 1; console.log("7, true", index)}
-        if (((index+1) % gridSize) !== 0 && gridLine[index + gridSize + 1] === 1)   {neighbors += 1; console.log("8, true", index)}
-        console.log(index, neighbors)
+        if ((index % gridSize) !== 0 && (index - gridSize) >= 0 && gridLine[index - gridSize - 1] === 1)    {neighbors += 1}
+        if ((index - gridSize) >= 0 && gridLine[index - gridSize    ] === 1)                                {neighbors += 1}
+        if (((index+1) % gridSize) !== 0 && (index - gridSize) >= 0 && gridLine[index - gridSize + 1] === 1){neighbors += 1}
+        if ((index % gridSize) !== 0 && gridLine[index - 1] === 1)                                          {neighbors += 1}
+        if (((index+1) % gridSize) !== 0 && gridLine[index + 1] === 1)                                      {neighbors += 1}
+        if ((index % gridSize) !== 0 && gridLine[index + gridSize - 1] === 1)                               {neighbors += 1}
+        if (gridLine[index + gridSize    ] === 1)                                                           {neighbors += 1}
+        if (((index+1) % gridSize) !== 0 && gridLine[index + gridSize + 1] === 1)                           {neighbors += 1}
+        // console.log(index, neighbors)
         return neighbors
     }
 
     render(){
-        return (
+        if (this.state.grid === null) {
+            return (
+                <div>Loading...</div>
+            )
+        } else {
+            return (
             <div className="App">
                 generation: {this.state.generation}
-                <Display grid={this.state.grid}/>
+                <Display grid={this.state.grid} clickCell={this.clickCell}/>
                 <Controls startGame={this.startGame} stopGame={this.stopGame} resetGame={this.resetGame}/>
             </div>
-        );
+            );
+        }
     }
 }
 

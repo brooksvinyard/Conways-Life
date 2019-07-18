@@ -29,10 +29,22 @@ class Game extends React.Component {
     componentDidUpdate = () => {
     }
 
-    generateGrid(size) {
+    generateGrid = () => {
+        var size = this.state.gridSize
         var newGrid =  new Array(size*size).fill(0).map(function(n) {
             return Math.round(Math.random());
         });
+        var gridgrid = this.lineToGridFn(size, newGrid)
+        this.setState({ grid: gridgrid });
+        return this.lineToGridFn(size, newGrid)
+    }
+    blankGrid = () => {
+        var size = this.state.gridSize
+        var newGrid =  new Array(size*size).fill(0).map(function(n) {
+            return 0;
+        });
+        var gridgrid = this.lineToGridFn(size, newGrid)
+        this.setState({ grid: gridgrid });
         return this.lineToGridFn(size, newGrid)
     }
 
@@ -48,17 +60,10 @@ class Game extends React.Component {
     }
 
     startGame = e => {
-        // e.preventDefault();
         this.setState({ start: true });
-        // this.setState({ initialGrid: this.state.grid });
         gameInterval = setInterval(this.gameTick, 100);
-        // setInterval(this.gameTick(), 1000);
-        // this.gameTick()
-        // maybe set timeout?
     }
     gameTick = () => {
-        // console.log("*tick*")
-        // gameInterval = setInterval(this.startGame(), 1000);
         this.game(this.state.gridSize, this.state.grid)
         this.setState({ generation: this.state.generation + 1 });
     }
@@ -160,10 +165,10 @@ class Game extends React.Component {
             )
         } else {
             return (
-            <div className="App">
-                generation: {this.state.generation}
+            <div className="game">
+                {/* generation: {this.state.generation} */}
+                <Controls blankGrid={this.blankGrid} generateGrid={this.generateGrid} gameTick={this.gameTick} start={this.state.start} startGame={this.startGame} stopGame={this.stopGame} resetGame={this.resetGame} generation={this.state.generation}/>
                 <Display grid={this.state.grid} clickCell={this.clickCell}/>
-                <Controls startGame={this.startGame} stopGame={this.stopGame} resetGame={this.resetGame}/>
             </div>
             );
         }
